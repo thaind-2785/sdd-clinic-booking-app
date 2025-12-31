@@ -1,0 +1,539 @@
+openapi: 3.0.3
+info:
+  title: Clinic Appointment Booking API
+  description: |
+    API for managing healthcare clinic appointments between patients and clinic staff.
+    Supports Google OAuth authentication, role-based access control, and email notifications.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@clinicbooking.example.com
+
+servers:
+  - url: https://clinic-booking.vercel.app/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Clinics
+    description: Clinic listing and details
+  - name: Appointments
+    description: Appointment booking and management
+  - name: Auth
+    description: Authentication endpoints
+
+paths:
+  /clinics:
+    get:
+      tags: [Clinics]
+      summary: List all clinics
+      description: Get all active clinics, optionally filtered by specialty
+      operationId: listClinics
+      security: []
+      parameters:
+        - name: specialty
+          in: query
+          description: Filter by medical specialty slug
+          schema:
+            type: string
+            example: cardiology
+        - name: city
+          in: query
+          description: Filter by city
+          schema:
+            type: string
+            example: Hanoi
+      responses:
+        '200':
+          description: Successfully retrieved clinics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClinicSummary'
+                  total:
+                    type: integer
+                    example: 15
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /clinics/{clinicId}:
+    get:
+      tags: [Clinics]
+      summary: Get clinic details
+      description: Retrieve full clinic information including schedule
+      operationId: getClinic
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ClinicId'
+        - name: date
+          in: query
+          description: Date for availability (defaults to today)
+          schema:
+            type: string
+            format: date
+            example: '2025-12-27'
+      responses:
+        '200':
+          description: Clinic found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments:
+    post:
+      tags: [Appointments]
+      summary: Create appointment request
+      description: Patient creates a new appointment request (FR-010 to FR-014)
+      operationId: createAppointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppointmentRequest'
+      responses:
+        '201':
+          description: Appointment request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Appointment'
+                  message:
+                    type: string
+                    example: 'Appointment request sent, awaiting clinic confirmation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Time slot no longer available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Time slot is no longer available'
+                code: 'SLOT_UNAVAILABLE'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    get:
+      tags: [Appointments]
+      summary: List user's appointments
+      description: Get appointments for the authenticated user (patient sees own, staff sees clinic's)
+      operationId: listAppointments
+      parameters:
+        - name: status
+          in: query
+          description: Filter by appointment status
+          schema:
+            type: string
+            enum: [Pending, Confirmed, Rejected]
+        - name: clinicId
+          in: query
+          description: Filter by clinic (staff only)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Appointments retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Appointment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments/{appointmentId}/approve:
+    post:
+      tags: [Appointments]
+      summary: Approve appointment
+      description: Clinic staff approves a pending appointment (FR-018)
+      operationId: approveAppointment
+      parameters:
+        - $ref: '#/components/parameters/AppointmentId'
+      responses:
+        '200':
+          description: Appointment approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Appointment'
+                  message:
+                    type: string
+                    example: 'Appointment confirmed. Email sent to patient.'
+        '400':
+          description: Cannot approve (already confirmed/rejected or slot unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not authorized for this clinic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments/{appointmentId}/reject:
+    post:
+      tags: [Appointments]
+      summary: Reject appointment
+      description: Clinic staff rejects a pending appointment (FR-019)
+      operationId: rejectAppointment
+      parameters:
+        - $ref: '#/components/parameters/AppointmentId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Optional rejection reason
+                  example: 'Clinic is fully booked that day'
+      responses:
+        '200':
+          description: Appointment rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Appointment'
+                  message:
+                    type: string
+                    example: 'Appointment rejected. Email sent to patient.'
+        '400':
+          description: Cannot reject (already confirmed/rejected)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not authorized for this clinic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /specialties:
+    get:
+      tags: [Clinics]
+      summary: List medical specialties
+      description: Get all available medical specialties for filtering
+      operationId: listSpecialties
+      security: []
+      responses:
+        '200':
+          description: Specialties retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MedicalSpecialty'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT token from Google OAuth
+
+  parameters:
+    ClinicId:
+      name: clinicId
+      in: path
+      required: true
+      description: Clinic UUID
+      schema:
+        type: string
+        format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+
+    AppointmentId:
+      name: appointmentId
+      in: path
+      required: true
+      description: Appointment UUID
+      schema:
+        type: string
+        format: uuid
+        example: '987fcdeb-51a2-43d7-9f8e-123456789abc'
+
+  schemas:
+    ClinicSummary:
+      type: object
+      required: [id, name, address, city, specialties]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: 'Heart & Vascular Clinic'
+        address:
+          type: string
+          example: '123 Medical Plaza, District 1'
+        city:
+          type: string
+          example: 'Ho Chi Minh City'
+        specialties:
+          type: array
+          items:
+            type: string
+          example: ['Cardiology', 'Internal Medicine']
+        phone:
+          type: string
+          example: '+84-28-1234-5678'
+
+    ClinicDetail:
+      allOf:
+        - $ref: '#/components/schemas/ClinicSummary'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: 'info@heartclinic.vn'
+            description:
+              type: string
+              example: 'Leading cardiovascular care center with 20+ years experience'
+            working_hours:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  open:
+                    type: string
+                    pattern: '^\d{2}:\d{2}$'
+                  close:
+                    type: string
+                    pattern: '^\d{2}:\d{2}$'
+              example:
+                mon: {open: '09:00', close: '17:00'}
+                tue: {open: '09:00', close: '17:00'}
+                wed: {open: '09:00', close: '17:00'}
+            available_slots:
+              type: array
+              description: Time slots for requested date
+              items:
+                $ref: '#/components/schemas/TimeSlot'
+
+    TimeSlot:
+      type: object
+      required: [id, date, start_time, end_time, is_available]
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          example: '2025-12-27'
+        start_time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          example: '10:00'
+        end_time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          example: '10:30'
+        is_available:
+          type: boolean
+
+    MedicalSpecialty:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: 'Cardiology'
+        slug:
+          type: string
+          example: 'cardiology'
+        description:
+          type: string
+          example: 'Heart and cardiovascular system care'
+        icon:
+          type: string
+          example: 'heart'
+
+    CreateAppointmentRequest:
+      type: object
+      required: [clinic_id, time_slot_id, reason_for_visit]
+      properties:
+        clinic_id:
+          type: string
+          format: uuid
+        time_slot_id:
+          type: string
+          format: uuid
+        reason_for_visit:
+          type: string
+          minLength: 10
+          maxLength: 500
+          example: 'Experiencing chest pain and shortness of breath'
+      example:
+        clinic_id: '123e4567-e89b-12d3-a456-426614174000'
+        time_slot_id: '987fcdeb-51a2-43d7-9f8e-123456789abc'
+        reason_for_visit: 'Regular checkup for blood pressure monitoring'
+
+    Appointment:
+      type: object
+      required: [id, patient, clinic, time_slot, reason_for_visit, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        patient:
+          $ref: '#/components/schemas/PatientInfo'
+        clinic:
+          $ref: '#/components/schemas/ClinicSummary'
+        time_slot:
+          $ref: '#/components/schemas/TimeSlot'
+        reason_for_visit:
+          type: string
+        status:
+          type: string
+          enum: [Pending, Confirmed, Rejected]
+        created_at:
+          type: string
+          format: date-time
+        approved_by:
+          type: string
+          description: Name of staff who approved/rejected
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    PatientInfo:
+      type: object
+      required: [id, name, email, phone]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: 'Nguyen Van A'
+        email:
+          type: string
+          format: email
+          example: 'nguyenvana@gmail.com'
+        phone:
+          type: string
+          example: '+84-90-123-4567'
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: 'Resource not found'
+        code:
+          type: string
+          example: 'NOT_FOUND'
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'Authentication required'
+            code: 'UNAUTHORIZED'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'Resource not found'
+            code: 'NOT_FOUND'
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  details:
+                    type: object
+                    example:
+                      reason_for_visit: 'Must be at least 10 characters'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'An unexpected error occurred'
+            code: 'INTERNAL_ERROR'

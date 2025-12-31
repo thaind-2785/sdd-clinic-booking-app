@@ -1,0 +1,53 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: clinic-booking-app/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: clinic-booking-app
+        run: npm ci
+      
+      - name: Run linting
+        working-directory: clinic-booking-app
+        run: npm run lint
+      
+      - name: Run unit tests
+        working-directory: clinic-booking-app
+        run: npm run test:unit
+      
+      - name: Run build
+        working-directory: clinic-booking-app
+        run: npm run build
+      
+      - name: Install Playwright
+        working-directory: clinic-booking-app
+        run: npx playwright install chromium
+      
+      - name: Run E2E tests
+        working-directory: clinic-booking-app
+        run: npm run test:e2e
+        
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: clinic-booking-app/test-results/
+          retention-days: 7

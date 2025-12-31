@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lịch khám đã bị từ chối</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        background-color: #f9fafb;
+        border-radius: 8px;
+        padding: 30px;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .header h1 {
+        color: #dc2626;
+        margin: 0;
+      }
+      .warning-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+      }
+      .content {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .detail-label {
+        font-weight: 600;
+        color: #6b7280;
+      }
+      .detail-value {
+        color: #111827;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+      .reason-box {
+        background-color: #fef2f2;
+        border-left: 4px solid #dc2626;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .footer {
+        text-align: center;
+        font-size: 14px;
+        color: #6b7280;
+        margin-top: 20px;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #0066cc;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="warning-icon">❌</div>
+        <h1>Lịch khám đã bị từ chối</h1>
+      </div>
+
+      <div class="content">
+        <p>Xin chào <strong>{{patientName}}</strong>,</p>
+
+        <p>Rất tiếc, yêu cầu đặt lịch khám của bạn đã không được chấp nhận.</p>
+
+        <div class="detail-row">
+          <span class="detail-label">Mã đặt lịch:</span>
+          <span class="detail-value">{{appointmentId}}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Phòng khám:</span>
+          <span class="detail-value">{{clinicName}}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Ngày khám (đã yêu cầu):</span>
+          <span class="detail-value">{{appointmentDate}}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Giờ khám (đã yêu cầu):</span>
+          <span class="detail-value">{{appointmentTime}}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Trạng thái:</span>
+          <span class="status-badge">Đã từ chối</span>
+        </div>
+
+        <div class="reason-box">
+          <p style="margin: 0 0 10px 0; font-weight: 600; color: #dc2626">
+            Lý do từ chối:
+          </p>
+          <p style="margin: 0">{{rejectionReason}}</p>
+        </div>
+
+        <p>
+          <strong>Bạn có thể thực hiện các hành động sau:</strong>
+        </p>
+        <ul>
+          <li>Đặt lịch khám vào thời gian khác</li>
+          <li>Liên hệ trực tiếp với phòng khám để được tư vấn</li>
+          <li>Tìm kiếm phòng khám khác phù hợp hơn</li>
+        </ul>
+
+        <center>
+          <a href="{{clinicsUrl}}" class="button">Tìm kiếm phòng khám khác</a>
+        </center>
+      </div>
+
+      <div class="footer">
+        <p>Email này được gửi tự động. Vui lòng không trả lời email này.</p>
+        <p>Liên hệ phòng khám: {{clinicPhone}} | {{clinicEmail}}</p>
+        <p style="margin-top: 10px; font-size: 12px">
+          Chúng tôi rất tiếc về sự bất tiện này. Cảm ơn bạn đã sử dụng dịch vụ.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
