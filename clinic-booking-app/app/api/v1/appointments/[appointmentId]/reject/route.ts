@@ -120,16 +120,8 @@ export async function POST(
       .update({ is_available: true } as unknown as never)
       .eq('id', appointment.time_slot_id);
 
-    // T108: Send email notification for rejection
-    try {
-      await NotificationService.sendEmail(
-        appointmentId,
-        'appointment_rejected'
-      );
-    } catch (emailError) {
-      console.error('Failed to send email notification:', emailError);
-      // Don't fail the request if email fails
-    }
+    // Email will be sent automatically via database webhook (T104)
+    // No need to call NotificationService here
 
     return NextResponse.json({ data: updatedAppointment });
   } catch (error) {

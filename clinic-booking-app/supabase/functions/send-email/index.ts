@@ -7,6 +7,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const WEB_DOMAIN = Deno.env.get('WEB_DOMAIN')!;
 
 interface EmailPayload {
   appointmentId: string;
@@ -16,12 +17,22 @@ interface EmailPayload {
     | 'appointment_rejected';
 }
 
-// Load email templates
-async function loadTemplate(templateName: string): Promise<string> {
-  const response = await fetch(
-    new URL(`./templates/${templateName}.html`, import.meta.url)
-  );
-  return await response.text();
+// Email templates stored as constants (inline to avoid file loading issues in Deno)
+const EMAIL_TEMPLATES: Record<string, string> = {
+  'appointment-created': `<!doctype html><html lang="vi"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Yêu cầu đặt lịch đã được tạo</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}.container{background-color:#f9fafb;border-radius:8px;padding:30px}.header{text-align:center;margin-bottom:30px}.header h1{color:#0066cc;margin:0}.content{background-color:white;border-radius:8px;padding:20px;margin-bottom:20px}.detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e5e7eb}.detail-label{font-weight:600;color:#6b7280}.detail-value{color:#111827}.status-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:14px;font-weight:600;background-color:#fef3c7;color:#92400e}.footer{text-align:center;font-size:14px;color:#6b7280;margin-top:20px}.button{display:inline-block;padding:12px 24px;background-color:#0066cc;color:white;text-decoration:none;border-radius:6px;margin:20px 0}</style></head><body><div class="container"><div class="header"><h1>✅ Yêu cầu đặt lịch đã được tạo</h1></div><div class="content"><p>Xin chào <strong>{{patientName}}</strong>,</p><p>Yêu cầu đặt lịch khám của bạn đã được gửi thành công. Dưới đây là thông tin chi tiết:</p><div class="detail-row"><span class="detail-label">Mã đặt lịch:</span><span class="detail-value">{{appointmentId}}</span></div><div class="detail-row"><span class="detail-label">Phòng khám:</span><span class="detail-value">{{clinicName}}</span></div><div class="detail-row"><span class="detail-label">Địa chỉ:</span><span class="detail-value">{{clinicAddress}}</span></div><div class="detail-row"><span class="detail-label">Ngày khám:</span><span class="detail-value">{{appointmentDate}}</span></div><div class="detail-row"><span class="detail-label">Giờ khám:</span><span class="detail-value">{{appointmentTime}}</span></div><div class="detail-row"><span class="detail-label">Lý do khám:</span><span class="detail-value">{{reasonForVisit}}</span></div><div class="detail-row"><span class="detail-label">Trạng thái:</span><span class="status-badge">Chờ xác nhận</span></div><p style="margin-top:20px">Phòng khám sẽ xem xét và phản hồi yêu cầu của bạn trong thời gian sớm nhất. Bạn sẽ nhận được email thông báo khi yêu cầu được xác nhận hoặc từ chối.</p><center><a href="{{dashboardUrl}}" class="button">Xem chi tiết đặt lịch</a></center></div><div class="footer"><p>Email này được gửi tự động. Vui lòng không trả lời email này.</p><p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ: {{clinicPhone}}</p></div></div></body></html>`,
+
+  'appointment-confirmed': `<!doctype html><html lang="vi"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Lịch khám đã được xác nhận</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}.container{background-color:#f9fafb;border-radius:8px;padding:30px}.header{text-align:center;margin-bottom:30px}.header h1{color:#059669;margin:0}.success-icon{font-size:48px;margin-bottom:10px}.content{background-color:white;border-radius:8px;padding:20px;margin-bottom:20px}.detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e5e7eb}.detail-label{font-weight:600;color:#6b7280}.detail-value{color:#111827}.status-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:14px;font-weight:600;background-color:#d1fae5;color:#065f46}.highlight-box{background-color:#ecfdf5;border-left:4px solid #059669;padding:15px;margin:20px 0;border-radius:4px}.footer{text-align:center;font-size:14px;color:#6b7280;margin-top:20px}.button{display:inline-block;padding:12px 24px;background-color:#059669;color:white;text-decoration:none;border-radius:6px;margin:20px 0}</style></head><body><div class="container"><div class="header"><div class="success-icon">✅</div><h1>Lịch khám đã được xác nhận</h1></div><div class="content"><p>Xin chào <strong>{{patientName}}</strong>,</p><p><strong>Chúc mừng!</strong> Lịch khám của bạn đã được phòng khám xác nhận.</p><div class="highlight-box"><p style="margin:0;font-weight:600;color:#059669">Vui lòng đến đúng giờ và mang theo giấy tờ tùy thân.</p></div><div class="detail-row"><span class="detail-label">Mã đặt lịch:</span><span class="detail-value">{{appointmentId}}</span></div><div class="detail-row"><span class="detail-label">Phòng khám:</span><span class="detail-value">{{clinicName}}</span></div><div class="detail-row"><span class="detail-label">Địa chỉ:</span><span class="detail-value">{{clinicAddress}}</span></div><div class="detail-row"><span class="detail-label">Ngày khám:</span><span class="detail-value">{{appointmentDate}}</span></div><div class="detail-row"><span class="detail-label">Giờ khám:</span><span class="detail-value">{{appointmentTime}}</span></div><div class="detail-row"><span class="detail-label">Lý do khám:</span><span class="detail-value">{{reasonForVisit}}</span></div><div class="detail-row"><span class="detail-label">Trạng thái:</span><span class="status-badge">Đã xác nhận</span></div><p style="margin-top:20px"><strong>Lưu ý quan trọng:</strong></p><ul><li>Vui lòng đến trước giờ hẹn 15 phút</li><li>Mang theo CMND/CCCD và sổ khám bệnh (nếu có)</li><li>Nếu cần hủy lịch, vui lòng liên hệ phòng khám trước 24 giờ</li></ul><center><a href="{{dashboardUrl}}" class="button">Xem chi tiết đặt lịch</a></center></div><div class="footer"><p>Email này được gửi tự động. Vui lòng không trả lời email này.</p><p>Liên hệ phòng khám: {{clinicPhone}} | {{clinicEmail}}</p></div></div></body></html>`,
+
+  'appointment-rejected': `<!doctype html><html lang="vi"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Lịch khám đã bị từ chối</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}.container{background-color:#f9fafb;border-radius:8px;padding:30px}.header{text-align:center;margin-bottom:30px}.header h1{color:#dc2626;margin:0}.warning-icon{font-size:48px;margin-bottom:10px}.content{background-color:white;border-radius:8px;padding:20px;margin-bottom:20px}.detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e5e7eb}.detail-label{font-weight:600;color:#6b7280}.detail-value{color:#111827}.status-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:14px;font-weight:600;background-color:#fee2e2;color:#991b1b}.reason-box{background-color:#fef2f2;border-left:4px solid #dc2626;padding:15px;margin:20px 0;border-radius:4px}.footer{text-align:center;font-size:14px;color:#6b7280;margin-top:20px}.button{display:inline-block;padding:12px 24px;background-color:#0066cc;color:white;text-decoration:none;border-radius:6px;margin:20px 0}</style></head><body><div class="container"><div class="header"><div class="warning-icon">❌</div><h1>Lịch khám đã bị từ chối</h1></div><div class="content"><p>Xin chào <strong>{{patientName}}</strong>,</p><p>Rất tiếc, yêu cầu đặt lịch khám của bạn đã không được chấp nhận.</p><div class="detail-row"><span class="detail-label">Mã đặt lịch:</span><span class="detail-value">{{appointmentId}}</span></div><div class="detail-row"><span class="detail-label">Phòng khám:</span><span class="detail-value">{{clinicName}}</span></div><div class="detail-row"><span class="detail-label">Ngày khám (đã yêu cầu):</span><span class="detail-value">{{appointmentDate}}</span></div><div class="detail-row"><span class="detail-label">Giờ khám (đã yêu cầu):</span><span class="detail-value">{{appointmentTime}}</span></div><div class="detail-row"><span class="detail-label">Trạng thái:</span><span class="status-badge">Đã từ chối</span></div><div class="reason-box"><p style="margin:0 0 10px 0;font-weight:600;color:#dc2626">Lý do từ chối:</p><p style="margin:0">{{rejectionReason}}</p></div><p><strong>Bạn có thể thực hiện các hành động sau:</strong></p><ul><li>Đặt lịch khám vào thời gian khác</li><li>Liên hệ trực tiếp với phòng khám để được tư vấn</li><li>Tìm kiếm phòng khám khác phù hợp hơn</li></ul><center><a href="{{clinicsUrl}}" class="button">Tìm kiếm phòng khám khác</a></center></div><div class="footer"><p>Email này được gửi tự động. Vui lòng không trả lời email này.</p><p>Liên hệ phòng khám: {{clinicPhone}} | {{clinicEmail}}</p><p style="margin-top:10px;font-size:12px">Chúng tôi rất tiếc về sự bất tiện này. Cảm ơn bạn đã sử dụng dịch vụ.</p></div></div></body></html>`,
+};
+
+// Get template by name
+function getTemplate(templateName: string): string {
+  const template = EMAIL_TEMPLATES[templateName];
+  if (!template) {
+    throw new Error(`Template not found: ${templateName}`);
+  }
+  return template;
 }
 
 // Replace template variables
@@ -168,7 +179,7 @@ serve(async (req: Request) => {
     }
 
     // Load and prepare template
-    const template = await loadTemplate(templateName);
+    const template = getTemplate(templateName);
     const variables = {
       patientName: appointment.patient.user.name,
       appointmentId: appointment.id.substring(0, 8),
@@ -207,6 +218,7 @@ serve(async (req: Request) => {
       recipients.push(appointment.patient.user.email);
     }
 
+    console.log('[Email] Sending email to:', recipients);
     // Send email via Resend (send to multiple recipients)
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -215,7 +227,7 @@ serve(async (req: Request) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Clinic Booking <noreply@clinic-booking.com>',
+        from: `Clinic Booking <noreply@${WEB_DOMAIN}>`,
         to: recipients,
         subject,
         html: htmlContent,

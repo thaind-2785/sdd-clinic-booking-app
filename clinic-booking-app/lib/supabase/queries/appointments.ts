@@ -94,7 +94,7 @@ export async function getAppointmentsByPatient(
   }
 
   const { data, error } = await query;
-
+  console.log('getAppointmentsByPatient data', data);
   if (error) {
     throw error;
   }

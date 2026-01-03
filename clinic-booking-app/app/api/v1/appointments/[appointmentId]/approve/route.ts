@@ -20,16 +20,14 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify user is clinic staff
-    const { data: userData } = (await supabase
-      .from('users')
-      .select('role, clinic_staff_id')
-      .eq('id', user.id)
-      .single()) as {
-      data: { role: string; clinic_staff_id: string | null } | null;
-    };
+    // Get clinic staff info
+    const { data: staffData } = (await supabase
+      .from('clinic_staff')
+      .select('id, clinic_id')
+      .eq('user_id', user.id)
+      .single()) as { data: { id: string; clinic_id: string } | null };
 
-    if (!userData || userData.role !== 'clinic_staff') {
+    if (!staffData) {
       return NextResponse.json(
         { error: 'Only clinic staff can approve appointments' },
         { status: 403 }
@@ -59,20 +57,7 @@ export async function POST(
     }
 
     // Verify clinic staff belongs to the clinic
-    if (!userData.clinic_staff_id) {
-      return NextResponse.json(
-        { error: 'Clinic staff ID not found' },
-        { status: 403 }
-      );
-    }
-
-    const { data: staffData } = (await supabase
-      .from('clinic_staff')
-      .select('clinic_id')
-      .eq('id', userData.clinic_staff_id)
-      .single()) as { data: { clinic_id: string } | null };
-
-    if (!staffData || staffData.clinic_id !== appointment.clinic_id) {
+    if (staffData.clinic_id !== appointment.clinic_id) {
       return NextResponse.json(
         { error: 'You can only approve appointments for your clinic' },
         { status: 403 }
@@ -117,16 +102,8 @@ export async function POST(
       .update({ is_available: false } as unknown as never)
       .eq('id', appointment.time_slot_id);
 
-    // T107: Send email notification for approval
-    try {
-      await NotificationService.sendEmail(
-        appointmentId,
-        'appointment_confirmed'
-      );
-    } catch (emailError) {
-      console.error('Failed to send email notification:', emailError);
-      // Don't fail the request if email fails
-    }
+    // Email will be sent automatically via database webhook (T104)
+    // No need to call NotificationService here
 
     return NextResponse.json({ data: updatedAppointment });
   } catch (error) {

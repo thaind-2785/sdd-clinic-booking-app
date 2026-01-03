@@ -15,7 +15,7 @@ export default function PatientDashboardPage() {
   );
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'Pending' | 'Confirmed'>('all');
-
+  console.log('appointments', appointments);
   const fetchAppointments = React.useCallback(async () => {
     if (!user) return setLoading(false);
 
