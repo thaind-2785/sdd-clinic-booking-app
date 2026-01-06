@@ -2,6 +2,8 @@
 
 Ứng dụng đặt lịch khám bệnh trực tuyến, giúp bệnh nhân tìm kiếm phòng khám và đặt lịch hẹn một cách nhanh chóng, tiện lợi. Hệ thống cũng hỗ trợ phòng khám quản lý lịch hẹn, xác nhận và từ chối yêu cầu đặt lịch.
 
+🔗 **[Live Demo](https://sdd-clinic-booking-app.vercel.app/)** - Trải nghiệm ứng dụng ngay
+
 ## ✨ Tính năng chính
 
 ### Dành cho Bệnh nhân (Patient)
