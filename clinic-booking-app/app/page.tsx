@@ -31,7 +31,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="from-primary to-primary/80 bg-gradient-to-br py-20 text-white">
+      <section className="from-primary to-primary/80 bg-linear-to-br py-20 text-white">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="mb-6 text-4xl font-bold md:text-5xl lg:text-6xl">
