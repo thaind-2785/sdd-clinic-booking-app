@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAvailableTimeSlots } from '@/lib/supabase/queries/time-slots';
+import {
+  getAvailableTimeSlots,
+  GetTimeSlotsParams,
+} from '@/lib/supabase/queries/time-slots';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const filters: Record<string, string> = { clinic_id };
+    const filters: GetTimeSlotsParams = { clinic_id };
     if (date) filters.date = date;
     if (start_time) filters.start_time = start_time;
     if (end_time) filters.end_time = end_time;

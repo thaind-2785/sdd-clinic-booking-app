@@ -1,7 +1,7 @@
 import { createClient } from '../client';
 import { TimeSlot } from '@/lib/types';
 
-interface GetTimeSlotsParams {
+export interface GetTimeSlotsParams {
   clinic_id: string;
   date?: string;
   start_time?: string;
