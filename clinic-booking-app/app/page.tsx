@@ -2,10 +2,31 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { getClinics } from '@/lib/supabase/queries/clinics';
 import ClinicCard from '@/components/clinic/ClinicCard';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
 export default async function HomePage() {
   // Get featured clinics (first 6)
   const { data: clinics } = await getClinics({ limit: 6, offset: 0 });
+
+  // Check if user is logged in
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // If user is clinic staff, redirect to clinic dashboard
+  if (user) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (userData?.role === 'clinic_staff') {
+      redirect('/clinic-dashboard');
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -24,15 +45,17 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Link href="/clinics">
-                <Button size="lg" variant="primary">
+                <Button size="lg" variant={!user ? 'primary' : 'secondary'}>
                   Tìm phòng khám
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button size="lg" variant="secondary" className="">
-                  Đăng ký ngay
-                </Button>
-              </Link>
+              {!user && (
+                <Link href="/login">
+                  <Button size="lg" variant="secondary" className="">
+                    Đăng ký ngay
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -139,20 +162,23 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-primary py-16 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="mb-4 text-3xl font-bold">Sẵn sàng bắt đầu chưa?</h2>
-          <p className="mb-8 text-lg">
-            Đăng ký tài khoản để trải nghiệm dịch vụ đặt lịch khám bệnh tiện lợi
-          </p>
-          <Link href="/login">
-            <Button size="lg" variant="secondary">
-              Đăng ký miễn phí
-            </Button>
-          </Link>
-        </div>
-      </section>
+      {/* CTA Section - Only show for non-logged-in users */}
+      {!user && (
+        <section className="bg-primary py-16 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="mb-4 text-3xl font-bold">Sẵn sàng bắt đầu chưa?</h2>
+            <p className="mb-8 text-lg">
+              Đăng ký tài khoản để trải nghiệm dịch vụ đặt lịch khám bệnh tiện
+              lợi
+            </p>
+            <Link href="/login">
+              <Button size="lg" variant="secondary">
+                Đăng ký miễn phí
+              </Button>
+            </Link>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

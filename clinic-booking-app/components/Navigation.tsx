@@ -13,10 +13,17 @@ export default function Navigation() {
 
   if (loading) {
     return (
-      <nav className="border-b border-gray-200 bg-white">
+      <nav
+        className="border-b border-gray-200 bg-white"
+        aria-label="Main navigation"
+        role="navigation"
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <div className="h-8 w-32 animate-pulse rounded bg-gray-200"></div>
+            <div
+              className="h-8 w-32 animate-pulse rounded bg-gray-200"
+              aria-label="Loading navigation"
+            ></div>
           </div>
         </div>
       </nav>
@@ -24,19 +31,25 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="border-b border-gray-200 bg-white shadow-sm">
+    <nav
+      className="border-b border-gray-200 bg-white shadow-sm"
+      aria-label="Main navigation"
+      role="navigation"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link
             href="/"
-            className="text-primary hover:text-primary-dark flex items-center gap-2 text-xl font-bold focus:outline-none"
+            className="text-primary hover:text-primary-dark focus:ring-primary flex items-center gap-2 text-xl font-bold focus:outline-none"
+            aria-label="Clinic Booking - Trang chủ"
           >
             <svg
               className="h-8 w-8"
               fill="currentColor"
               viewBox="0 0 20 20"
               aria-hidden="true"
+              role="presentation"
             >
               <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
             </svg>
@@ -44,7 +57,7 @@ export default function Navigation() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4" role="menubar">
             {!user ? (
               <>
                 <Link

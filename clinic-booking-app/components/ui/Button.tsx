@@ -48,6 +48,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${className}`}
         disabled={disabled || loading}
+        aria-busy={loading}
+        aria-disabled={disabled || loading}
         {...props}
       >
         {loading && (
@@ -57,6 +59,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             fill="none"
             viewBox="0 0 24 24"
             aria-hidden="true"
+            role="presentation"
           >
             <circle
               className="opacity-25"
