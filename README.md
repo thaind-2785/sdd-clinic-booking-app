@@ -4,14 +4,17 @@
 
 🔗 **[Live Demo](https://sdd-clinic-booking-app.vercel.app/)** - Trải nghiệm ứng dụng ngay
 
-## ✨ Tính năng chính
+<img width="1902" height="934" alt="Screenshot 2026-01-06 at 13 30 10" src="https://github.com/user-attachments/assets/ebca2832-c6d5-4278-9893-82631c0ced3e" />
 
+## ✨ Tính năng chính
 ### Dành cho Bệnh nhân (Patient)
 - 🔍 Tìm kiếm phòng khám theo chuyên khoa
 - 📅 Đặt lịch hẹn khám bệnh trực tuyến
 - 👤 Quản lý hồ sơ cá nhân và lịch sử khám bệnh
 - 🔔 Nhận thông báo email khi lịch hẹn được xác nhận/từ chối
 - 📊 Xem trạng thái lịch hẹn (Pending, Confirmed, Rejected, Cancelled)
+<img width="1906" height="933" alt="Screenshot 2026-01-06 at 13 32 13" src="https://github.com/user-attachments/assets/b49d0cc4-7562-4a44-a7cf-497c2cad4ca2" />
+<img width="1918" height="930" alt="Screenshot 2026-01-06 at 13 32 40" src="https://github.com/user-attachments/assets/e891aa0f-0726-41c2-b8ef-d7af95bf12b6" />
 
 ### Dành cho Phòng khám (Clinic Staff)
 - 📋 Quản lý danh sách yêu cầu đặt lịch
@@ -19,6 +22,7 @@
 - 👥 Xem thông tin bệnh nhân
 - 📈 Dashboard tổng quan lịch hẹn
 - 🔔 Hệ thống thông báo email tự động
+<img width="1906" height="925" alt="Screenshot 2026-01-06 at 13 31 06" src="https://github.com/user-attachments/assets/956b6f04-3306-43b0-b47d-0a7d5fc15287" />
 
 ## 🛠️ Tech Stack
 
